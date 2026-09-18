@@ -89,7 +89,7 @@ You can choose the install directory. **Uninstalling does not delete your data**
 ### Run from source
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/jinmingzhi2005/kairoskairos.git Kairos
 cd Kairos
 npm install
 npm run dev      # dev mode with HMR

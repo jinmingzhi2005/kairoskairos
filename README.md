@@ -86,7 +86,7 @@
 ### 从源码运行
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/jinmingzhi2005/kairoskairos.git Kairos
 cd Kairos
 npm install
 npm run dev      # 开发模式，带热更新
