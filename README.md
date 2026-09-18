@@ -14,6 +14,8 @@
 
 一个常驻桌面的日历小卡片。不用打开任何应用，抬眼就能看到今天有什么安排。
 
+**简体中文** · [English](README.en.md)
+
 </div>
 
 ---
@@ -59,12 +61,17 @@
 
 <div align="center">
 
-<img src="docs/screenshots/calendar.png" width="380" alt="日历主界面" />
+<img src="docs/screenshots/calendar.png" width="360" alt="日历主界面" />
+
+<sub>日历主界面 —— 「今天」高亮为蓝色，中秋三天标红，9/20 那个周日标「班」（国庆调休补班），<br />格子下方是农历与节气，待办下方是同步进来的当天日程</sub>
+
+<br /><br />
+
+<img src="docs/screenshots/reminder.png" width="330" alt="强提醒弹窗" />
+
+<sub>强提醒弹窗 —— 独立窗口，始终置于所有窗口之上</sub>
 
 </div>
-
-> 「今天」高亮为蓝色，中秋三天标红，9/20 那个周日标「班」（国庆调休补班），
-> 待办下方是同步进来的当天日程。
 
 ## 快速开始
 
@@ -109,15 +116,15 @@ npm run dev      # 开发模式，带热更新
 src/
 ├── main/            主进程
 │   ├── index.ts         入口：单实例锁、数据目录迁移
-│   ├── ipc.ts           IPC 注册、托盘回调、提醒分发
+│   ├── ipc.ts           IPC 注册、托盘回调、提醒分发、主题控制
 │   ├── logger.ts        同步落盘日志（排查启动问题全靠它）
 │   ├── services/
 │   │   ├── todoService.ts     待办与提醒调度（两段式升级在这里）
-│   │   ├── holidays 相关      → src/shared/holidays.ts
 │   │   ├── calendarSync.ts    日历同步源管理与拉取
 │   │   ├── icsParser.ts       自写的 ICS 解析器（零依赖纯函数）
 │   │   ├── outlookService.ts  通过命令行脚本读 Outlook COM
-│   │   ├── settingsService.ts / autostart.ts / displayService.ts / cardStore.ts
+│   │   ├── win32.ts           压窗口到 Z 序底部（贴桌面用）
+│   │   └── settingsService.ts / autostart.ts / displayService.ts / cardStore.ts
 │   └── windows/
 │       ├── calendarWindow.ts  日历窗 + 尺寸补偿
 │       └── reminderWindow.ts  强提醒弹窗
@@ -126,15 +133,17 @@ src/
 │   ├── index.html      日历主窗
 │   ├── reminder.html   强提醒弹窗
 │   └── src/{calendar,reminder,components,hooks,lib,styles}
-└── shared/          类型、IPC 通道常量、节假日库、重复规则
+└── shared/          类型、IPC 通道常量、节假日库、农历节气、重复规则
 ```
 
 ### 几个设计决定
 
 - **两个渲染入口**：强提醒是一个独立小窗，不复用日历窗，避免提醒弹窗被日历窗的状态影响。
 - **自写 ICS 解析器**：要打进单文件 `app.asar`，少一个运行时依赖就少一处打包坑；而且它是零依赖纯函数，可以脱离 Electron 直接单元测试。
+- **农历不自己算**：直接用运行时内置的 ICU 中文历法（`Intl.DateTimeFormat('zh-CN-u-ca-chinese')`），零依赖零数据表；节气则必须自算，用太阳视黄经到达 15° 整数倍判定。
 - **窗口尺寸补偿**：Windows 上无边框透明窗口的实际 bounds 会比请求值多几个像素。不补偿的话，每次拖拽缩放都会累积漂移。所有补偿都在主进程内部消化，对外只暴露「名义几何」。
 - **提醒调度放主进程**：渲染层被回收（窗口隐藏、崩溃重建）都不会漏掉提醒。
+- **日历贴桌面用「失焦压底」而非定时轮询**：点它时自然浮上来（说明正在用），点别处就沉下去，比定时判断自然。
 
 ## 测试
 
@@ -152,9 +161,9 @@ npm run verify          # 一条命令跑完全部
 | `npm run test:window` | 10 项：窗口层级（日历不置顶、提醒必置顶） |
 | `npm run smoke` | 渲染冒烟 + 尺寸守卫（圆点尺寸、子元素溢出），并导出预览图便于人工核对 |
 
-测试都是**跑真实主进程、读回数据断言**，不是 mock 到失去意义的那种。
+测试都是**跑真实主进程、读回数据断言**，不是 mock 到失去意义的那种。其中 `test:reminders` 会构造待办文件、启动真实应用、再读回 `todos.json` 验证哪些该触发、哪些不该触发。
 
-带「等 N 分钟」语义的逻辑留了环境变量口子方便测试：`KAIROS_TICK_MS`（调度轮询间隔）与 `KAIROS_ESCALATE_MS`（通知→强提醒的升级延迟）。
+带「等 N 分钟」语义的逻辑留了环境变量口子方便测试：`KAIROS_TICK_MS`（调度轮询间隔）与 `KAIROS_ESCALATE_MS`（通知→强提醒的升级延迟），测试里压成 1.5 秒 / 3 秒即可秒级验证两段式链路。
 
 ## 打包
 
@@ -167,8 +176,9 @@ node scripts/run.mjs electron-builder --win nsis --publish never
 
 产物在 `release/`。
 
-> `clean:artifacts` 不能省：验证构建用 `emptyOutDir: false`（为了在受限环境里避开目录清空），
-> 代价是每次构建的旧文件会留在 `assets/` 里，最后被一起打进安装包。
+> `clean:artifacts` 不能省：构建用 `emptyOutDir: false`，代价是每次构建的旧文件会留在
+> `assets/` 里，最后被一起打进安装包。这个脚本靠 **html 的实际引用关系**判断谁是孤儿，
+> 而不是猜文件名里的 hash——猜错过一次，把当前产物删了。
 
 ## 数据与隐私
 
@@ -197,10 +207,12 @@ Outlook 直连完全走本地 COM 接口。
 
 ## 路线图
 
-- [ ] 农历与节气显示
+- [x] 农历与节气显示 <sub>v1.2.0</sub>
+- [x] 深色模式跟随系统 <sub>v1.2.0</sub>
+- [ ] 提醒升级延迟可配置（目前写死 5 分钟）
 - [ ] 更多国家 / 地区节假日
+- [ ] 按农历重复的事项（如「每年除夕提醒我」）
 - [ ] 待办拖动排序与分组
-- [ ] 深色模式跟随系统
 - [ ] 日历订阅的双向同步（目前只读）
 
 ## 许可
