@@ -1,4 +1,5 @@
 import type { TodoItem } from './types'
+import { markOf } from './holidays'
 
 export type RepeatRule = TodoItem['repeat']
 
@@ -60,6 +61,10 @@ export function occursOn(anchor: string, repeat: RepeatRule, target: string): bo
     case 'daily':
       return true
     case 'weekday': {
+      // 「工作日」= 周一到周五，但要去掉法定放假日、加上调休补班的周末
+      const mark = markOf(target)
+      if (mark?.kind === 'holiday') return false
+      if (mark?.kind === 'workday') return true
       const day = targetDate.getDay()
       return day >= 1 && day <= 5
     }

@@ -29,6 +29,7 @@ const compile = spawnSync(
     'src/main/services/icsParser.ts',
     'src/shared/holidays.ts',
     'src/shared/lunar.ts',
+    'src/shared/repeat.ts',
     '--outDir',
     OUT,
     '--rootDir',
@@ -52,6 +53,7 @@ if (compile.status !== 0) {
 const { parseIcs } = require(join(OUT, 'main', 'services', 'icsParser.js'))
 const { markOf, holidaySummary, hasOfficialData } = require(join(OUT, 'shared', 'holidays.js'))
 const { lunarInfoOf } = require(join(OUT, 'shared', 'lunar.js'))
+const { occursOn } = require(join(OUT, 'shared', 'repeat.js'))
 
 let pass = 0
 let fail = 0
@@ -111,6 +113,20 @@ const s2026 = holidaySummary(2026)
 eq('2026 年放假总天数（官方：33 天）', s2026.holidayDays, 33)
 eq('2026 年调休补班天数', s2026.makeupDays, 6)
 eq('2026 年假期段数', s2026.groups.length, 7)
+
+/* ================= 工作日重复 ================= */
+
+console.log('\n--- 工作日重复（occursOn 排除节假日） ---')
+
+check('周一（2026-02-16）在春节假期内 → 不算工作日', occursOn('2026-02-16', 'weekday', '2026-02-16') === false)
+check('周四（2026-10-01）在国庆假期内 → 不算工作日', occursOn('2026-10-01', 'weekday', '2026-10-01') === false)
+check('周三（2025-10-01）在国庆假期内 → 不算工作日', occursOn('2025-10-01', 'weekday', '2025-10-01') === false)
+check('周六（2026-02-14）是春节调休补班 → 算工作日', occursOn('2026-02-14', 'weekday', '2026-02-14') === true)
+check('周日（2026-09-20）是国庆调休补班 → 算工作日', occursOn('2026-09-20', 'weekday', '2026-09-20') === true)
+check('周日（2025-04-27）是劳动节调休补班 → 算工作日', occursOn('2025-04-27', 'weekday', '2025-04-27') === true)
+check('普通周二（2026-02-24）→ 算工作日', occursOn('2026-02-24', 'weekday', '2026-02-24') === true)
+check('普通周六（2026-03-07）→ 不算工作日', occursOn('2026-03-07', 'weekday', '2026-03-07') === false)
+check('无官方数据的 2027 工作日仍按周一到周五', occursOn('2027-01-04', 'weekday', '2027-01-04') === true)
 
 /* ================= 农历与节气 ================= */
 
