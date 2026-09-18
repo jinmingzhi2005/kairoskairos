@@ -136,8 +136,11 @@ export function CalendarApp(): JSX.Element {
   )
 
   const grid = useMemo(
-    () => buildMonth(cal.y, cal.m, today, { showHolidays: settings.showHolidays }),
-    [cal, today, settings.showHolidays]
+    () => buildMonth(cal.y, cal.m, today, {
+      showHolidays: settings.showHolidays,
+      showLunar: settings.showLunar
+    }),
+    [cal, today, settings.showHolidays, settings.showLunar]
   )
 
   const yearHolidays = useMemo(() => holidaySummary(cal.y), [cal.y])
@@ -224,6 +227,13 @@ export function CalendarApp(): JSX.Element {
     },
     [api, push]
   )
+
+  const toggleLunar = useCallback(() => {
+    const next = !settings.showLunar
+    setSettings((prev) => ({ ...prev, showLunar: next }))
+    void api.patchSettings({ showLunar: next })
+    push(next ? '已显示农历与节气' : '已隐藏农历')
+  }, [api, push, settings.showLunar])
 
   const toggleCalendarMode = useCallback(() => {
     const next = settings.calendarMode === 'desktop' ? 'floating' : 'desktop'
@@ -386,12 +396,10 @@ export function CalendarApp(): JSX.Element {
           if (cell.isToday) classes.push('today')
           if (date === selectedDate) classes.push('sel')
 
-          const label = mark ? mark.short : cell.weekend && !isMakeup ? '休' : ''
-
           return (
             <div key={cell.key} className={classes.join(' ')} onClick={() => setSelectedDate(date)}>
               <span>{cell.label}</span>
-              {label ? <span className="lunar">{label}</span> : null}
+              {cell.sub ? <span className={`lunar k-${cell.subKind}`}>{cell.sub}</span> : null}
               {cellTodos.length > 0 || cellEvents.length > 0 ? (
                 <div className="dots">
                   {cellTodos.slice(0, MAX_DOTS).map((todo) => (
@@ -629,6 +637,14 @@ export function CalendarApp(): JSX.Element {
               </small>
             </div>
             <div className={`switch${settings.showHolidays ? ' on' : ''}`} onClick={toggleHolidays} />
+          </div>
+
+          <div className="set-row">
+            <div>
+              显示农历与节气
+              <small>格子下方显示农历日、节气与传统节日</small>
+            </div>
+            <div className={`switch${settings.showLunar ? ' on' : ''}`} onClick={toggleLunar} />
           </div>
 
           <div className="set-sec">

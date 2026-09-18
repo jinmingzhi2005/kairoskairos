@@ -89,11 +89,14 @@ export type CalendarMode =
 export interface AppSettings {
   autoStart: boolean
   snoozeMinutes: number
-  theme: ThemeMode
   /** 日历窗是「贴桌面」还是「始终置顶」 */
   calendarMode: CalendarMode
   /** 是否在日历上标注法定节假日与调休补班 */
   showHolidays: boolean
+  /** 是否在日历格子上显示农历日期与节气 */
+  showLunar: boolean
+  /** 主题：跟随系统 / 强制浅色 / 强制深色 */
+  theme: ThemeMode
   /** 节假日地区 */
   holidayRegion: HolidayRegion
   /** 日历同步的自动刷新间隔（分钟），0 = 不自动刷新 */
@@ -112,6 +115,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // 默认贴着桌面：日历是「抬眼就能看到」的东西，不该压在工作窗口上面
   calendarMode: 'desktop',
   showHolidays: true,
+  showLunar: true,
   holidayRegion: 'CN',
   syncIntervalMinutes: 30
 }

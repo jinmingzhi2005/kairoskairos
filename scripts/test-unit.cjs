@@ -28,6 +28,7 @@ const compile = spawnSync(
     tsc,
     'src/main/services/icsParser.ts',
     'src/shared/holidays.ts',
+    'src/shared/lunar.ts',
     '--outDir',
     OUT,
     '--rootDir',
@@ -50,6 +51,7 @@ if (compile.status !== 0) {
 
 const { parseIcs } = require(join(OUT, 'main', 'services', 'icsParser.js'))
 const { markOf, holidaySummary, hasOfficialData } = require(join(OUT, 'shared', 'holidays.js'))
+const { lunarInfoOf } = require(join(OUT, 'shared', 'lunar.js'))
 
 let pass = 0
 let fail = 0
@@ -109,6 +111,60 @@ const s2026 = holidaySummary(2026)
 eq('2026 年放假总天数（官方：33 天）', s2026.holidayDays, 33)
 eq('2026 年调休补班天数', s2026.makeupDays, 6)
 eq('2026 年假期段数', s2026.groups.length, 7)
+
+/* ================= 农历与节气 ================= */
+
+console.log('\n--- 农历与节气 ---')
+
+const lunar = (d) => lunarInfoOf(d)
+
+// 交叉验证：官方通知里写明「2026 年 2 月 15 日是农历腊月二十八」，
+// 这个日期和节气、节日都不相干，正好用来验算法本身
+check(
+  '2026-02-15 = 腊月廿八（与国办通知一致）',
+  lunar('2026-02-15')?.monthName === '腊月' && lunar('2026-02-15')?.dayName === '廿八',
+  `${lunar('2026-02-15')?.monthName}${lunar('2026-02-15')?.dayName}`
+)
+check('2026-02-16 判定为除夕', lunar('2026-02-16')?.festival === '除夕')
+check(
+  '2026-02-17 判定为春节',
+  lunar('2026-02-17')?.festival === '春节' && lunar('2026-02-17')?.highlight === true
+)
+check('2026-09-25 判定为中秋节', lunar('2026-09-25')?.festival === '中秋节')
+check('2025-01-29 判定为春节', lunar('2025-01-29')?.festival === '春节')
+check(
+  '闰月能识别（2025 闰六月初八）',
+  lunar('2025-08-01')?.monthName === '闰六月' && lunar('2025-08-01')?.dayName === '初八',
+  `${lunar('2025-08-01')?.monthName}${lunar('2025-08-01')?.dayName}`
+)
+check('普通日子回落到农历日', lunar('2026-05-01')?.short === '十五', lunar('2026-05-01')?.short)
+
+// 节气：太阳视黄经算出来的，和公开天文年历核对
+const TERM_PROBES = [
+  ['2025-02-03', '立春'], ['2025-03-20', '春分'], ['2025-06-21', '夏至'], ['2025-12-21', '冬至'],
+  ['2026-02-04', '立春'], ['2026-04-05', '清明'], ['2026-06-21', '夏至'], ['2026-12-22', '冬至']
+]
+let termPass = 0
+for (const [date, name] of TERM_PROBES) {
+  if (lunar(date)?.term === name) termPass += 1
+  else console.log(`      ✗ ${date} 期望 ${name}，实际 ${lunar(date)?.term ?? '无'}`)
+}
+check(`节气日期正确（${TERM_PROBES.length} 个抽样）`, termPass === TERM_PROBES.length, `${termPass}/${TERM_PROBES.length}`)
+
+// 一年必须正好 24 个节气，多了少了都说明跨界判定写错了
+function countTermsOf(year) {
+  let n = 0
+  for (let m = 1; m <= 12; m += 1) {
+    const days = new Date(year, m, 0).getDate()
+    for (let d = 1; d <= days; d += 1) {
+      const key = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      if (lunarInfoOf(key)?.term) n += 1
+    }
+  }
+  return n
+}
+check('2025 年正好 24 个节气', countTermsOf(2025) === 24, String(countTermsOf(2025)))
+check('2026 年正好 24 个节气', countTermsOf(2026) === 24, String(countTermsOf(2026)))
 
 /* ================= ICS 解析 ================= */
 

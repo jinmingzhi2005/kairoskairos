@@ -1,7 +1,7 @@
 {
   "name": "kairos",
   "productName": "Kairos",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "恰当时机 · 极简桌面日历与待办提醒，支持中国法定节假日与电脑日历同步",
   "main": "./out/main/index.js",
   "author": "Kairos",

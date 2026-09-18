@@ -133,6 +133,9 @@ body {
   position: relative;
   /* 别用 1/1.04：7 列 6 行下来会顶掉下面待办区的空间 */
   aspect-ratio: 1 / 0.94;
+  /* 加了农历小字后内容变多，不加这个 flex 项会被内容撑高，
+     把下面待办区挤没（aspect-ratio 管不住 min-height: auto） */
+  overflow: hidden;
   border-radius: 11px;
   display: flex;
   flex-direction: column;
@@ -169,6 +172,30 @@ body {
 .day.holiday .lunar {
   color: #d0654f;
   font-weight: 600;
+}
+
+/* 农历小字的分类配色 */
+.day .lunar.k-lunarFestival {
+  color: #d0654f;
+  font-weight: 600;
+}
+
+.day .lunar.k-term {
+  color: #3a7d5c;
+  font-weight: 600;
+}
+
+.day .lunar.k-festival {
+  color: #8a7bb8;
+}
+
+.day .lunar.k-lunar {
+  color: var(--ink3);
+  opacity: 0.85;
+}
+
+.day .lunar.k-rest {
+  color: #c98b8b;
 }
 
 .day.we .lunar {
@@ -968,4 +995,160 @@ body {
   font-size: 10px;
   padding: 1px 7px;
   border-radius: 7px;
+}
+
+/* ---------- 深色模式（跟随系统） ----------
+ * 主进程设 nativeTheme.themeSource，Chromium 据此改变 prefers-color-scheme，
+ * 所以这里一条媒体查询就够，不需要额外的 IPC 往返。
+ * 浅色那边有若干写死的白色叠加，深色下要逐项换成白低透明度版本。
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass: rgba(26, 28, 36, 0.66);
+    --glass-2: rgba(20, 22, 29, 0.84);
+    --glass-3: rgba(30, 33, 42, 0.94);
+    --stroke: rgba(255, 255, 255, 0.12);
+    --ink: #e9ecf2;
+    --ink2: #a6adba;
+    --ink3: #737b88;
+    --accent: #5b8cff;
+    --danger: #ff6b6b;
+    --ok: #2ec4a6;
+    --shadow: 0 14px 44px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+
+  /* 日期格 */
+  .day {
+    color: #dde1e8;
+  }
+
+  .day:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .day.we {
+    color: #d98b8b;
+  }
+
+  .day.holiday,
+  .day.holiday .lunar,
+  .day .lunar.k-lunarFestival {
+    color: #ff8f80;
+  }
+
+  .day .lunar.k-term {
+    color: #6fbd93;
+  }
+
+  .day .lunar.k-festival {
+    color: #b3a3e0;
+  }
+
+  .day .lunar.k-rest {
+    color: #c98b8b;
+  }
+
+  .day.makeup {
+    background: rgba(224, 168, 0, 0.18);
+    color: #e6b95e;
+  }
+
+  .day.makeup .lunar {
+    color: #e6b95e;
+  }
+
+  .day.blank {
+    opacity: 0.26;
+  }
+
+  .day.today,
+  .day.today.holiday {
+    background: linear-gradient(180deg, #4d7dff, #2b5ce0);
+    color: #fff;
+  }
+
+  .day.today .lunar,
+  .day.today .lunar.k-term,
+  .day.today .lunar.k-lunar,
+  .day.today .lunar.k-lunarFestival {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  /* 输入与按钮 */
+  .inp {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: var(--ink);
+  }
+
+  .inp::placeholder {
+    color: var(--ink3);
+  }
+
+  .inp:focus {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(91, 140, 255, 0.55);
+  }
+
+  .btn {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.13);
+    color: var(--ink2);
+  }
+
+  .btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--ink);
+  }
+
+  .btn.primary {
+    background: linear-gradient(180deg, #4d7dff, #2b5ce0);
+    border-color: transparent;
+    color: #fff;
+  }
+
+  .seg {
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  /* 分隔线 */
+  .todos,
+  .foot,
+  .set-sec {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* 日程与提示块 */
+  .evt,
+  .set-hint {
+    background: rgba(255, 255, 255, 0.055);
+  }
+
+  .todo {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .toast {
+    background: rgba(42, 45, 56, 0.96);
+    color: var(--ink);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* 开关 / 标签 */
+  .switch {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .chip {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* 滚动条 */
+  .list::-webkit-scrollbar-thumb,
+  .evts::-webkit-scrollbar-thumb,
+  .foot::-webkit-scrollbar-thumb,
+  .panel-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+  }
 }

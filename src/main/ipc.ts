@@ -1,10 +1,11 @@
-import { app, dialog, globalShortcut, ipcMain, Notification, screen } from 'electron'
+import { app, dialog, globalShortcut, ipcMain, nativeTheme, Notification, screen } from 'electron'
 import type { ReminderAction } from '@shared/api'
 import {
   CARD_DEFAULT_H,
   CARD_DEFAULT_W,
   IPC,
   type FireMode,
+  type ThemeMode,
   type AppSettings,
   type ReminderPayload,
   type RuntimeState
@@ -67,6 +68,16 @@ let lastReminderId: string | null = null
 /** 「测试一次强提醒」用的占位 id：它没有对应待办，操作时不能去动真实数据 */
 const TEST_REMINDER_ID = '__test__'
 
+/**
+ * 主题。
+ * 直接设 nativeTheme.themeSource —— Chromium 会据此改变 `prefers-color-scheme`，
+ * 渲染层只用一条 CSS 媒体查询就能跟随，不需要额外的 IPC 往返。
+ */
+function applyTheme(mode: ThemeMode): void {
+  nativeTheme.themeSource = mode === 'system' ? 'system' : mode
+  log(`主题：${mode === 'system' ? `跟随系统（当前${nativeTheme.shouldUseDarkColors ? '深色' : '浅色'}）` : mode}`)
+}
+
 function calendarWin() {
   return getCalendarWindow()
 }
@@ -126,6 +137,7 @@ export function registerIpc(): void {
     refreshTray(trayCallbacks)
     if (patch.syncIntervalMinutes !== undefined) applySyncInterval(next.syncIntervalMinutes)
     if (patch.calendarMode !== undefined) applyCalendarMode(next.calendarMode)
+    if (patch.theme !== undefined) applyTheme(next.theme)
     return next
   })
   ipcMain.handle(IPC.runtimeGet, () => ({ ...runtime }))
@@ -276,6 +288,9 @@ export async function bootstrapMain(): Promise<void> {
   } else {
     runtime.autoStart = settings.autoStart
   }
+
+  // 窗口创建前先把主题定好，避免启动瞬间闪一下浅色
+  applyTheme(settings.theme)
 
   registerIpc()
   createTray(trayCallbacks)

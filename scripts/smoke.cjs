@@ -14,7 +14,8 @@ const { join } = require('node:path')
 
 const ROOT = join(__dirname, '..')
 const BUILD = process.env.KAIROS_BUILD_DIR || 'out'
-const OUT_IMAGE = join(ROOT, 'prototype', 'calendar-preview.png')
+const DARK = process.env.KAIROS_DARK === '1'
+const OUT_IMAGE = join(ROOT, 'prototype', DARK ? 'calendar-preview-dark.png' : 'calendar-preview.png')
 const OUT_REMINDER = join(ROOT, 'prototype', 'reminder-preview.png')
 
 const CARD = { x: 1100, y: 90, width: 344, height: 660 }
@@ -85,6 +86,7 @@ function registerStubs() {
     theme: 'light',
     calendarMode: 'desktop',
     showHolidays: true,
+    showLunar: true,
     holidayRegion: 'CN',
     syncIntervalMinutes: 30
   }))
@@ -149,6 +151,13 @@ async function settle(webContents, ms) {
   await new Promise((resolve) => setTimeout(resolve, ms))
   webContents.invalidate()
   await new Promise((resolve) => setTimeout(resolve, 500))
+}
+
+// KAIROS_DARK=1 时强制深色，用来给深色模式截一张图做人工核对
+const { nativeTheme } = require('electron')
+if (process.env.KAIROS_DARK === '1') {
+  nativeTheme.themeSource = 'dark'
+  console.log('DARK_MODE=on')
 }
 
 app.disableHardwareAcceleration()
