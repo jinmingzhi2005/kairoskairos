@@ -1,0 +1,39 @@
+appId: com.kairos.calendar
+productName: Kairos
+
+directories:
+  buildResources: resources
+  output: release
+
+files:
+  - out/**
+  - package.json
+  # 构建目录不清空，旧产物靠 scripts/clean-artifacts.mjs 清理；
+  # 删不掉时会被隔离成 *.orphan，这里排除掉，保证它们不进包
+  - "!**/*.orphan"
+
+extraResources:
+  - from: resources/icons
+    to: icons
+
+asar: true
+compression: maximum
+
+win:
+  icon: resources/icons/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Kairos
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  artifactName: Kairos-${version}-setup.${ext}

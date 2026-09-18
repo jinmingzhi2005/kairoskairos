@@ -1,0 +1,49 @@
+{
+  "name": "kairos",
+  "productName": "Kairos",
+  "version": "1.1.0",
+  "description": "恰当时机 · 极简桌面日历与待办提醒，支持中国法定节假日与电脑日历同步",
+  "main": "./out/main/index.js",
+  "author": "Kairos",
+  "license": "MIT",
+  "keywords": [
+    "electron",
+    "calendar",
+    "reminder",
+    "desktop-widget",
+    "holiday",
+    "ics"
+  ],
+  "scripts": {
+    "dev": "node scripts/run.mjs electron-vite dev",
+    "start": "node scripts/run.mjs electron .",
+    "build": "electron-vite build",
+    "preview": "node scripts/run.mjs electron-vite preview",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "icons": "node scripts/gen-icons.mjs",
+    "clean:artifacts": "node scripts/clean-artifacts.mjs",
+    "smoke": "node scripts/run.mjs electron scripts/smoke.cjs",
+    "test:tray": "node scripts/run.mjs electron scripts/test-tray.cjs",
+    "test:unit": "node scripts/test-unit.cjs",
+    "test:sync": "node scripts/run.mjs electron scripts/test-sync.cjs",
+    "test:window": "node scripts/run.mjs electron scripts/test-window.cjs",
+    "test:reminders": "node scripts/test-reminders.cjs",
+    "verify": "npm run typecheck && npm run test:unit && npm run test:reminders && npm run test:tray && npm run test:sync && npm run test:window && npm run smoke",
+    "dist": "electron-vite build && node scripts/run.mjs electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  }
+}
